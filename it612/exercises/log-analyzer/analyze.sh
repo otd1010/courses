@@ -7,6 +7,11 @@
 
 LOG="server.log"
 
+if [ ! -f "$LOG" ]; then
+    echo "Error: $LOG not found!"
+    exit 1
+fi
+
 echo "=== Log Analysis Report ==="
 echo ""
 
@@ -15,16 +20,12 @@ echo ""
 # Use grep and wc to count lines by log level.
 # ─────────────────────────────────────────────
 echo "--- Line Counts ---"
-
 # TODO: Count total lines in the log file
-# echo "Total lines: $( ... )"
-
+echo "Total lines: $(wc -l < "$LOG")"
 # TODO: Count lines containing ERROR
-# echo "Error lines: $( ... )"
-
+echo "Error lines: $(grep -c "ERROR" "$LOG")"
 # TODO: Count lines containing WARN
-# echo "Warning lines: $( ... )"
-
+echo "Warning lines: $(grep -c "WARN" "$LOG")"
 echo ""
 
 # ─────────────────────────────────────────────
@@ -35,8 +36,10 @@ echo ""
 echo "--- Unique Error Messages ---"
 
 # TODO: grep ERROR lines, extract the message part, sort, remove duplicates
-# grep ... | awk ... | sort | uniq
-
+grep "ERROR" "$LOG" \
+| awk '{for(i=4;i<=NF;i++) printf "%s%s", $i, (i==NF?"":" "); print ""}' \
+| sed -E 's/retry [0-9]+\/[0-9]+/retry x\/3/' \
+| sort | uniq
 echo ""
 
 # ─────────────────────────────────────────────
@@ -47,8 +50,7 @@ echo ""
 echo "--- Top Endpoints ---"
 
 # TODO: grep for GET or POST, extract method and path, count and rank
-# grep ... | awk ... | sort | uniq -c | sort -rn
-
+grep -E "GET|POST" "$LOG" | awk '{print $5, $6}' | sort | uniq -c | sort -rn
 echo ""
 
 # ─────────────────────────────────────────────
@@ -58,8 +60,7 @@ echo ""
 echo "--- User Logins ---"
 
 # TODO: grep for session lines, extract usernames, count and rank
-# grep ... | grep -o ... | sort | uniq -c | sort -rn
-
+grep "session created for user=" "$LOG" | grep -o 'user=[a-zA-Z0-9]*' | cut -d'=' -f2 | sort | uniq -c | sort -rn
 echo ""
 
 # ─────────────────────────────────────────────
@@ -68,4 +69,4 @@ echo ""
 # ─────────────────────────────────────────────
 
 # TODO: Print a line showing when this report was generated
-# echo "Report generated: $( ... )"
+echo "Report generated: $(date)"
